@@ -55,52 +55,44 @@ var requestHandler = function(request, response) {
   // console.logs in your code.
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
-  var headers = request.headers;
+  var headers = {};
   var method = request.method;
   var url = request.url;
   var baseUrl = url.split('?')[0];
   var query = url.split('?')[1];
+  var statusCode = 200;
   headers = _.extend(headers, defaultCorsHeaders);
-  // headers['Content-Type'] = 'application/json';
+  headers['Content-Type'] = 'application/json';
   request.setEncoding('utf8');
   console.log(baseUrl);
   console.log(query);
+  var data = '';
 
   if (url === '/classes/messages' || baseUrl === '/classes/messages/') { 
     
-    if (request.method === 'POST') {
-      response.statusCode = 201;
-    } else {
-      response.statusCode = 200;
-    }
-
-    response.setHeader('Content-Type', 'application/json');
-    response.setHeader('access-control-allow-origin', '*');
-    response.setHeader('access-control-allow-methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.setHeader('access-control-allow-headers', 'content-type, accept');
-    response.setHeader('access-control-max-age', 10);
-    request.on('error', function(err) {
-      console.error(err);
-    });
-
-    request.on('data', function(chunk) {
-      var temp = JSON.parse(chunk);
-      var newMsg = new Message(temp.username, temp.message);
-      results.push(newMsg);
-    });
-
-    request.on('end', function() {
-      response.on('error', function(err) {
+    if (request.method === 'POST') {  
+      statusCode = 201;
+      request.on('error', function(err) {
         console.error(err);
       });
 
-      var newResponseStr = JSON.stringify(new ResponseObj(headers, method, url, results));
-      response.end(newResponseStr);
-    });
+      request.on('data', function(chunk) {
+        data += chunk;
+      });
+
+      request.on('end', function() {
+        results.push(data);
+      });
+    } else {
+      statusCode = 200;
+    }
   } else {
-    response.statusCode = 404;
-    response.end();
+    statusCode = 404;
   }
+  var newResponseStr = JSON.stringify(new ResponseObj(headers, method, url, results));
+  response.writeHead(statusCode, headers);
+  response.end(newResponseStr);
+};
   // See the note below about CORS headers.
  
   // Tell the client we are sending them plain text.
@@ -116,7 +108,6 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-};
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
