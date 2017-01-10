@@ -10,7 +10,7 @@ var waitForThen = function (test, cb) {
   }, 5);
 };
 
-xdescribe('Node Server Request Listener Function', function() {
+describe('Node Server Request Listener Function', function() {
   it('Should answer GET requests for /classes/messages with a 200 status code', function() {
     // This is a fake server request. Normally, the server would provide this,
     // but we want to test our function's behavior totally independent of the server code

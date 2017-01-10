@@ -14,6 +14,8 @@ this file and include it in basic-server.js so that it actually works.
 var http = require('http');
 // var request = require('request');
 var _ = require('underscore');
+var query = require('querystring');
+
 var defaultCorsHeaders = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -24,8 +26,17 @@ var defaultCorsHeaders = {
 var Message = function (username, message, lobby) {
   this.username = username;
   this.message = message;
-  this.lobby = lobby;
+  this.roomname = lobby;
 };
+
+var ResponseObj = function(headers, method, url, results) {
+  this.headers = headers;
+  this.method = method; 
+  this.url = url;
+  this.results = results;
+};
+
+var results = [];
 
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
@@ -47,51 +58,48 @@ var requestHandler = function(request, response) {
   var headers = request.headers;
   var method = request.method;
   var url = request.url;
-  var body = [];
-  var data = '';
+  var baseUrl = url.split('?')[0];
+  var query = url.split('?')[1];
   headers = _.extend(headers, defaultCorsHeaders);
-  headers['Content-Type'] = 'application/json';
+  // headers['Content-Type'] = 'application/json';
   request.setEncoding('utf8');
+  console.log(baseUrl);
+  console.log(query);
 
-  if (url === '/classes/messages') { 
-
+  if (url === '/classes/messages' || baseUrl === '/classes/messages/') { 
+    
     if (request.method === 'POST') {
       response.statusCode = 201;
     } else {
       response.statusCode = 200;
     }
-    response.setHeader('Content-Type', 'application/json');
 
+    response.setHeader('Content-Type', 'application/json');
+    response.setHeader('access-control-allow-origin', '*');
+    response.setHeader('access-control-allow-methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.setHeader('access-control-allow-headers', 'content-type, accept');
+    response.setHeader('access-control-max-age', 10);
     request.on('error', function(err) {
       console.error(err);
-    }).on('data', function(chunk) {
+    });
+
+    request.on('data', function(chunk) {
       var temp = JSON.parse(chunk);
       var newMsg = new Message(temp.username, temp.message);
-      body.push(newMsg);
-      data += chunk;
+      results.push(newMsg);
+    });
 
-    }).on('end', function() {
+    request.on('end', function() {
       response.on('error', function(err) {
         console.error(err);
       });
+
+      var newResponseStr = JSON.stringify(new ResponseObj(headers, method, url, results));
+      response.end(newResponseStr);
     });
-    var responseBody = {
-      headers: headers,
-      method: method,
-      url: url,
-      results: body
-    };
-    var responseBodyStr = JSON.stringify(responseBody);
-    if (request.method === 'POST') {  
-      console.log('POST method;');
-      console.log(responseBodyStr);
-      console.log(JSON.parse(responseBodyStr).results[0].username);
-      console.log(typeof JSON.parse(responseBodyStr).results[0]);
-    }
-    response.end(responseBodyStr);
   } else {
     response.statusCode = 404;
-    response.end('Status Code: 404');
+    response.end();
   }
   // See the note below about CORS headers.
  
@@ -120,4 +128,4 @@ var requestHandler = function(request, response) {
 // Another way to get around this restriction is to serve you chat
 // client from this domain by setting up static file serving.
 
-module.exports = requestHandler;
+exports.requestHandler = requestHandler;
