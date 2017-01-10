@@ -66,9 +66,6 @@ var requestHandler = function(request, response) {
   headers = _.extend(headers, defaultCorsHeaders);
   headers['Content-Type'] = 'application/json';
   request.setEncoding('utf8');
-  console.log(url);
-  // console.log(baseUrl);
-  // console.log(query);
   var data = '';
 
   if (url === '/classes/messages' || baseUrl === '/classes/messages/') { 
