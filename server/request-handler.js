@@ -30,10 +30,12 @@ var Message = function (username, message, lobby) {
 };
 
 var ResponseObj = function(headers, method, url, results) {
+  parsedResults = results.map((value) => JSON.parse(value));
+  
   this.headers = headers;
   this.method = method; 
   this.url = url;
-  this.results = results;
+  this.results = parsedResults;
 };
 
 var results = [];
@@ -55,23 +57,26 @@ var requestHandler = function(request, response) {
   // console.logs in your code.
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
-  var headers = {};
   var method = request.method;
   var url = request.url;
   var baseUrl = url.split('?')[0];
   var query = url.split('?')[1];
   var statusCode = 200;
+  var headers = {};
   headers = _.extend(headers, defaultCorsHeaders);
   headers['Content-Type'] = 'application/json';
   request.setEncoding('utf8');
-  console.log(baseUrl);
-  console.log(query);
+  console.log(url);
+  // console.log(baseUrl);
+  // console.log(query);
   var data = '';
 
   if (url === '/classes/messages' || baseUrl === '/classes/messages/') { 
     
     if (request.method === 'POST') {  
+      
       statusCode = 201;
+
       request.on('error', function(err) {
         console.error(err);
       });
@@ -83,6 +88,7 @@ var requestHandler = function(request, response) {
       request.on('end', function() {
         results.push(data);
       });
+
     } else {
       statusCode = 200;
     }
@@ -93,6 +99,8 @@ var requestHandler = function(request, response) {
   response.writeHead(statusCode, headers);
   response.end(newResponseStr);
 };
+
+exports.requestHandler = requestHandler;
   // See the note below about CORS headers.
  
   // Tell the client we are sending them plain text.
@@ -119,4 +127,3 @@ var requestHandler = function(request, response) {
 // Another way to get around this restriction is to serve you chat
 // client from this domain by setting up static file serving.
 
-exports.requestHandler = requestHandler;
